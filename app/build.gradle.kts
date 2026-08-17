@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -32,6 +33,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -45,6 +47,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.tv.material)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
@@ -54,8 +57,14 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     implementation("androidx.compose.material:material-icons-extended")
-    implementation("com.squareup.retrofit2:retrofit:2.11.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.kotlinx.serialization.converter)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging.interceptor)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.gson)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
 
 }

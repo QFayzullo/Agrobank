@@ -20,6 +20,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,17 +39,33 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.delay
 
 @Composable
-fun RegisterCode(phoneNumber: String,navController: NavController) {
+fun RegisterCode(
+    phoneNumber: String,
+    navController: NavController,
+    viewModel: RegisterViewModel = viewModel()
+) {
     var otpCode by remember { mutableStateOf("") }
     var timerSeconds by remember { mutableIntStateOf(59) }
     var isTimerRunning by remember { mutableStateOf(true) }
 
+    val fullPhone = remember(phoneNumber) { "+998$phoneNumber" }
     val maskedPhone = remember(phoneNumber) {
         formatPhoneMask(phoneNumber)
+    }
+
+    val verifyState = viewModel.verifyState
+    val resendState = viewModel.uiState
+
+    // Kod to'g'ri tasdiqlangach - keyingi ekranga o'tamiz
+    LaunchedEffect(verifyState) {
+        if (verifyState is RegisterUiState.Success) {
+            navController.navigate("registerPassword")
+        }
     }
 
     LaunchedEffect(key1 = isTimerRunning, key2 = timerSeconds) {
@@ -167,6 +184,8 @@ fun RegisterCode(phoneNumber: String,navController: NavController) {
                         color = Color.Gray
                     )
                 )
+            } else if (resendState is RegisterUiState.Loading) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp))
             } else {
                 Text(
                     text = "Kod kelmadimi? Kodni qayta yuborish",
@@ -177,6 +196,7 @@ fun RegisterCode(phoneNumber: String,navController: NavController) {
                         textDecoration = TextDecoration.Underline
                     ),
                     modifier = Modifier.clickable {
+                        viewModel.sendOtp(fullPhone)
                         timerSeconds = 59
                         isTimerRunning = true
                         otpCode = ""
@@ -185,15 +205,25 @@ fun RegisterCode(phoneNumber: String,navController: NavController) {
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            // Tasdiqlashdagi xatolik (masalan noto'g'ri OTP)
+            if (verifyState is RegisterUiState.Error) {
+                Text(
+                    text = verifyState.message,
+                    style = TextStyle(fontSize = 15.sp, color = Color.Red),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
         }
 
         Button(
             onClick = {
                 if (otpCode.length == 6) {
-                    navController.navigate("registerPassword")
+                    viewModel.verifyOtp(fullPhone, otpCode)
                 }
             },
-            enabled = otpCode.length == 6,
+            enabled = otpCode.length == 6 && verifyState !is RegisterUiState.Loading,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
@@ -204,13 +234,21 @@ fun RegisterCode(phoneNumber: String,navController: NavController) {
                 disabledContainerColor = Color(0xFFCCCCCC)
             )
         ) {
-            Text(
-                text = "Tasdiqlash",
-                style = TextStyle(
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+            if (verifyState is RegisterUiState.Loading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
                 )
-            )
+            } else {
+                Text(
+                    text = "Tasdiqlash",
+                    style = TextStyle(
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+            }
         }
     }
 }

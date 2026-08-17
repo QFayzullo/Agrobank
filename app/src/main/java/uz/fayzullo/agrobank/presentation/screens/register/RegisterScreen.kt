@@ -17,11 +17,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,11 +41,22 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 
 @Composable
-fun RegisterScreen(navController: NavController) {
+fun RegisterScreen(
+    navController: NavController,
+    viewModel: RegisterViewModel = viewModel()
+) {
     var phoneNumber by remember { mutableStateOf("") }
+    val uiState = viewModel.uiState
+
+    LaunchedEffect(uiState) {
+        if (uiState is RegisterUiState.Success) {
+            navController.navigate("registerCode/$phoneNumber")
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -143,6 +156,14 @@ fun RegisterScreen(navController: NavController) {
             )
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            if (uiState is RegisterUiState.Error) {
+                Text(
+                    text = uiState.message,
+                    style = TextStyle(fontSize = 15.sp, color = Color.Red),
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
         }
 
         Column(
@@ -176,10 +197,10 @@ fun RegisterScreen(navController: NavController) {
             Button(
                 onClick = {
                     if (phoneNumber.length == 9) {
-                        navController.navigate("registerCode/$phoneNumber")
+                        viewModel.sendOtp("+998$phoneNumber")
                     }
                 },
-                enabled = phoneNumber.length == 9,
+                enabled = phoneNumber.length == 9 && uiState !is RegisterUiState.Loading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
@@ -189,13 +210,21 @@ fun RegisterScreen(navController: NavController) {
                     disabledContainerColor = Color(0xFFCCCCCC)
                 )
             ) {
-                Text(
-                    text = "Keyingisi",
-                    style = TextStyle(
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+                if (uiState is RegisterUiState.Loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
                     )
-                )
+                } else {
+                    Text(
+                        text = "Keyingisi",
+                        style = TextStyle(
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                }
             }
         }
     }
